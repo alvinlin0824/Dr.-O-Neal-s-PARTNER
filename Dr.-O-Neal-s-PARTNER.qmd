@@ -1,0 +1,137 @@
+---
+title: "Dr. O'Neal's"
+author: "Alvin, Lin"
+date: "`r Sys.Date()`"
+date-format: full
+format:
+   html:
+     theme: flatly
+     embed-resources: true
+toc: true
+toc-depth: 3
+toc-location: left
+execute:
+  echo: false
+  warning: false
+  keep-md: true
+---
+
+```{r}
+#| label: Libaray Packages 
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(janitor)
+  library(UUU)
+  library(fs)
+  library(haven)
+  library(vroom)
+  library(magrittr)
+  library(htmltools)
+  library(plotly)
+  library(shiny)
+  library(patchwork)
+})
+```
+
+```{r}
+#| label: Import CKM.csv
+file_list <- dir_ls(gsub("\\\\", "/", r"(D:\Data sharing (by site))"), 
+                    regexp = "*.csv$", recurse = T) |> 
+             path_filter(regexp = "SVHM", invert = T, ignore.case = T) |> 
+             path_filter(regexp = "CKM", invert = F, ignore.case = T)
+```
+
+```{r}
+#| label: Import sensor data
+sensor_data <- file_list |> 
+               purrr::set_names() |>
+               map(\(path) vroom::vroom(path,show_col_types = F,skip = 1, col_types = c(`Date Time` = "c"),delim = ",") ,.progress = T) |> 
+               list_rbind(names_to = "Path") |> 
+               transmute(
+                         Subject = str_extract(Path,regex("[:alpha:]{1}[:digit:]{2}")),
+                        `Date Time` = case_when(str_detect(`Date Time`,"^0") ~ mdy_hm(`Date Time`),
+                                              str_detect(`Date Time`,"/") ~ dmy_hm(`Date Time`),
+                                              .default = ymd_hms(`Date Time`)),
+                        sensor = `Ketone (mmol/L)`) |> 
+               distinct() |> 
+               arrange(Subject,`Date Time`)
+```
+
+```{r}
+plot_function <- function(subject_id) {
+  
+    plot_ly() %>%
+        add_trace(
+        data = sensor_data %>%
+          filter(Subject == subject_id) %>%
+          arrange(`Date Time`),
+        x = ~ `Date Time`,
+        y = ~ sensor,
+        type = "scatter",
+        mode = "lines+markers",
+        opacity = 0.7,
+        marker = list(size = 4, symbol = "triangle"),
+        line = list(dash = "dot"),
+        yaxis = "y1"
+      ) |> 
+     layout(title = list(text = subject_id),
+           xaxis = list(title = "Date Time"),
+                      yaxis = list(title = "ketone, mmol/L", side = "left", range = c(0,3), tickvals = seq(0,3,1), gridwidth = 3),
+                      # yaxis2 = list(title = "glucose, mg/dL", side = "left", range = c(0,400), tickvals = seq(0,400,50), overlaying = "y" , gridwidth = 3),
+                  legend = list(orientation = "h", x = 0, y = -0.2),
+                  newshape = list(line = list(color = "lightskyblue")))
+
+}
+```
+
+```{r}
+#| eval: false
+plot_function(subject_id = "A01")
+```
+
+```{r}
+#| column: screen
+
+plots <- list()
+for (i in 1:length(unique(sensor_data$Subject))){
+  plots[[i]] <- plot_function(subject_id = unique(sensor_data$Subject)[i])
+}
+# walk(map(unique(sensor_data$Subject) , ~ plot_function(.x)),print)
+htmltools::tagList(plots)
+```
+
+```{r}
+knitr::knit_exit()
+```
+
+```{r}
+ggplot_plot_function <- function(subject_id) {
+
+ggplot()+
+  geom_line(data = sensor_data |>
+                   filter(Subject == subject_id) |> 
+                   arrange(`Date Time`),
+            aes(x = `Date Time`, y = sensor),color = "#1F78B4") +
+  scale_y_continuous(name = "ketone, mmol/L", breaks = c(seq(0,4,1))) +
+  scale_x_datetime(breaks = "1 month", date_labels = "%d%b%y") +
+  scale_color_manual(values = c("#A6CEE3","#B2DF8A","#1F78B4","#CAB2D6")) +
+  labs(title = subject_id) + 
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank(), plot.title = element_text(hjust = 0.5)) +
+  coord_cartesian(ylim = c(0,4)) |> 
+  suppressWarnings()
+}
+```
+
+```{r}
+#|eval: false
+# ggplot_plot_function(subject_id = "A01")
+```
+
+```{r}
+#| column: screen
+#| fig-width: 17
+#| fig-height: 6
+walk(map(unique(sensor_data$Subject) , ~ ggplot_plot_function(.x)),print)
+```
+
