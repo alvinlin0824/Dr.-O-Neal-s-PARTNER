@@ -1,19 +1,5 @@
 ---
 title: "Dr. O'Neal's"
-author: "Alvin, Lin"
-date: "`r Sys.Date()`"
-date-format: full
-format:
-   html:
-     theme: flatly
-     embed-resources: true
-toc: true
-toc-depth: 3
-toc-location: left
-execute:
-  echo: false
-  warning: false
-  keep-md: true
 ---
 
 ```{r}
@@ -101,7 +87,7 @@ htmltools::tagList(plots)
 ```
 
 ```{r}
-knitr::knit_exit()
+# knitr::knit_exit()
 ```
 
 ```{r}
@@ -132,6 +118,6 @@ ggplot()+
 #| column: screen
 #| fig-width: 17
 #| fig-height: 6
-walk(map(unique(sensor_data$Subject) , ~ ggplot_plot_function(.x)),print)
+# walk(map(unique(sensor_data$Subject) , ~ ggplot_plot_function(.x)),print)
 ```
 
