@@ -1,6 +1,5 @@
 project:
   type: website
-  output-dir: docs
 
 website:
   title: "Profile Plot"
@@ -8,7 +7,6 @@ website:
     left:
       - href: Dr.-O-Neal-s-PARTNER.qmd
         text: Home
-      - about.qmd
 
 format:
   html:
