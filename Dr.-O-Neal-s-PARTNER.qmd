@@ -92,7 +92,8 @@ for (i in 1:length(unique(sensor_data$Subject))){
   plots[[i]] <- plot_function(subject_id = unique(sensor_data$Subject)[i])
 }
 # walk(map(unique(sensor_data$Subject) , ~ plot_function(.x)),print)
-htmltools::tagList(plots)
+# htmltools::tagList(plots)
+htmlwidgets::saveWidget(fig, "plot.html", selfcontained = TRUE)
 ```
 
 ```{r}
